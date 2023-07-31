@@ -1,0 +1,55 @@
+name: Publish Docker image
+
+on:
+  release:
+    types: [published]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  
+jobs:
+  build-and-push-image:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Log in to the Container registry
+      uses: docker/login-action@v2
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata (tags, labels) for Normal Docker images
+      id: meta
+      uses: docker/metadata-action@v4
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+    - name: Extract metadata (tags, labels) for Distroless Docker images
+      id: meta_distroless
+      uses: docker/metadata-action@v4
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        flavor: |
+          suffix=_distroless,onlatest=true
+
+    - name: Build and push Normal Docker image
+      uses: docker/build-push-action@v3
+      with:
+        context: .
+        file: Dockerfile-builder
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+
+    - name: Build and push Distroless Docker image
+      uses: docker/build-push-action@v3
+      with:
+        context: .
+        file: Dockerfile-builder_distroless
+        push: true
+        tags: ${{ steps.meta_distroless.outputs.tags }}
+        labels: ${{ steps.meta_distroless.outputs.labels }}
