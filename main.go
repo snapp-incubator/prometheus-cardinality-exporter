@@ -154,6 +154,8 @@ func collectMetrics() {
 					log.Fatalf("Error obtaining endpoints matching selector (%v) in namespace (%v): %v", namespace, opts.Selector, err.Error())
 				}
 
+				log.Debugf("found %d Enpoint with selector %s in namespace %s", len(endpointsList.Items), opts.Selector, namespace)
+
 				// Iterate over all of the endpoints and add them to the data structure
 				for _, endpoints := range endpointsList.Items { // This loop represents a service
 
@@ -168,14 +170,16 @@ func collectMetrics() {
 						for _, address := range endpointSubset.Addresses { // This loop represents each individual endpoint
 							shardedInstanceName := address.TargetRef.Name // Name of sharded instance e.g. prometheus-kubernetes-0
 							instanceID := namespace + "_" + prometheusInstanceName + "_" + shardedInstanceName
+							InstanceAddress := "https://" + address.IP + ":9091"
 
 							if _, ok := cardinalityInfoByInstance[instanceID]; !ok {
+								log.Debugf("Adding %s to list of instances", InstanceAddress)
 								// Add a newly found endpoint to the data structure
 								cardinalityInfoByInstance[instanceID] = &cardinality.PrometheusCardinalityInstance{
 									Namespace:           namespace,
 									InstanceName:        prometheusInstanceName,
 									ShardedInstanceName: shardedInstanceName,
-									InstanceAddress:     "https://" + address.IP + ":9091",
+									InstanceAddress:     InstanceAddress,
 									TrackedLabels: cardinality.TrackedLabelNames{
 										SeriesCountByMetricNameLabels:     [10]string{},
 										LabelValueCountByLabelNameLabels:  [10]string{},
@@ -185,7 +189,7 @@ func collectMetrics() {
 								}
 							} else {
 								// If the endpoint is already known, update it's address
-								cardinalityInfoByInstance[instanceID].InstanceAddress = "https://" + address.IP + ":9091"
+								cardinalityInfoByInstance[instanceID].InstanceAddress = InstanceAddress
 							}
 
 							if authValue, ok := promAPIAuthValues[instanceID]; ok { // Check for Prometheus API credentials for sharded instance
