@@ -175,7 +175,7 @@ func collectMetrics() {
 									Namespace:           namespace,
 									InstanceName:        prometheusInstanceName,
 									ShardedInstanceName: shardedInstanceName,
-									InstanceAddress:     "http://" + address.IP + ":9090",
+									InstanceAddress:     "https://" + address.IP + ":9091",
 									TrackedLabels: cardinality.TrackedLabelNames{
 										SeriesCountByMetricNameLabels:     [10]string{},
 										LabelValueCountByLabelNameLabels:  [10]string{},
@@ -185,7 +185,7 @@ func collectMetrics() {
 								}
 							} else {
 								// If the endpoint is already known, update it's address
-								cardinalityInfoByInstance[instanceID].InstanceAddress = "http://" + address.IP + ":9090"
+								cardinalityInfoByInstance[instanceID].InstanceAddress = "https://" + address.IP + ":9091"
 							}
 
 							if authValue, ok := promAPIAuthValues[instanceID]; ok { // Check for Prometheus API credentials for sharded instance
