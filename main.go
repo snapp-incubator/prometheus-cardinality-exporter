@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net/http"
 	"os"
@@ -34,6 +35,7 @@ var opts struct {
 	Frequency             float32  `long:"freq" short:"f" default:"6" help:"Frequency in hours with which to query the Prometheus API."`
 	ServiceRegex          string   `long:"regex" short:"r" default:"prometheus-[a-zA-Z0-9_-]+" help:"If any found services don't match the regex, they are ignored."`
 	LogLevel              string   `long:"log.level" short:"l" default:"info" help:"Level for logging. Options (in order of verbosity): [debug, info, warn, error, fatal]."`
+	Insecure              bool     `long:"insecure" short:"k" help:"Allow insecure Https connections"`
 }
 
 func collectMetrics() {
@@ -209,6 +211,12 @@ func collectMetrics() {
 		for instanceID, instance := range cardinalityInfoByInstance {
 
 			prometheusClient := &http.Client{}
+
+			if opts.Insecure {
+				customTransport := http.DefaultTransport.(*http.Transport).Clone()
+				customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+				prometheusClient = &http.Client{Transport: customTransport}
+			}
 
 			fetchingStatusLog := fmt.Sprintf("Fetching current Prometheus status, from Prometheus instance: %v. Sharded instance: %v. Namespace: %v.", instance.InstanceName, instance.ShardedInstanceName, instance.Namespace)
 			if instance.AuthValue != "" {
